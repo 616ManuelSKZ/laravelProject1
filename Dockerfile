@@ -1,35 +1,36 @@
 # Usa una imagen oficial de PHP con Apache
 FROM php:8.2-apache
 
-# Instala dependencias de Laravel y extensiones necesarias
+# Instala dependencias del sistema y extensiones necesarias para Laravel
 RUN apt-get update && apt-get install -y \
     git \
     curl \
-    zip \
-    unzip \
     libpng-dev \
+    libjpeg-dev \
     libonig-dev \
     libxml2-dev \
-    libzip-dev \
-    && docker-php-ext-install pdo pdo_mysql mbstring zip exif pcntl
+    zip \
+    unzip \
+    && docker-php-ext-install pdo pdo_mysql mbstring exif pcntl bcmath gd
 
-# Habilita el módulo rewrite de Apache
+# Habilita mod_rewrite en Apache
 RUN a2enmod rewrite
-
-# Copia los archivos del proyecto al contenedor
-COPY . /var/www/html
 
 # Establece el directorio de trabajo
 WORKDIR /var/www/html
 
-# Instala Composer
+# Copia los archivos del proyecto al contenedor
+COPY . .
+
+# Instala Composer (gestor de dependencias de PHP)
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Instala las dependencias del proyecto Laravel
-RUN composer install --optimize-autoloader --no-dev
+# Instala las dependencias del proyecto
+RUN composer install
 
-# Establece permisos para Laravel
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+# Da permisos de escritura a Laravel
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html/storage
 
-# Exponer el puerto 80
+# Expone el puerto por defecto de Apache
 EXPOSE 80
